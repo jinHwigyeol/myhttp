@@ -81,7 +81,7 @@ def doHTTPService(sock):
         fields = reqLine.split(' ')
         method = fields[0]
         reqURL = fields[1]
-        reqBody = fields[2]
+        reqBody = fields[3]
         #ver = fields[2]
         #print('requested URL: {}'.format(reqURL))
     else :  # client closed the connection
