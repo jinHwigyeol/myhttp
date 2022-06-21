@@ -2,7 +2,7 @@
 
 import sys
 import os
-from urllib.parse import parse_qs
+from urllib.parse import parse_qs, urlparse
 import cgi
 
 qString = os.environ['QUERY_STRING']

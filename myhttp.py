@@ -7,8 +7,8 @@ import errno
 import subprocess
 from urllib.parse import urlparse
 
-phrase = {'200':'OK', '404':'File Not Found',
-          '500':'Internal Server Error', '501': 'Not Implemented'}
+phrase = {'200': 'OK', '404': 'File Not Found',
+              '500': 'Internal Server Error', '501': 'Not Implemented'}
 
 def shutdownServer(signum, frame):
     print("server shutdown ...")
@@ -35,7 +35,7 @@ def getFile(fileName):
     return (code, body)
 
 def doCGI(cgiProg, qString):
-    envCGI = dict(os.environ, QUERY_STRING=qString)
+    envCGI = dict(os.envget, QUERY_STRING=qString)
     prog = './' + cgiProg
 
     print(prog)
@@ -50,13 +50,13 @@ def doCGI(cgiProg, qString):
         pass
     return (code, body)
 
-def doPOSTCGI(cgiProg, qString):
-    postCGI = dict(sys.stdin.redline(), QUERY_STRING=qString)
+'''def doPOSTCGI(cgiProg, qString):
+    std = dict(stdin=subprocess.PIPE, QUERY_STRING=qString)
     prog = './' + cgiProg
 
     print(prog)
     try:
-        proc = subprocess.Popen([prog], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        proc = subprocess.Popen([prog], stdin=std, stdout=subprocess.PIPE)
         code = '200'
         body = proc.communicate()[0].decode()  # pipe byte stream -> unicode
     except Exception as e:
@@ -64,12 +64,13 @@ def doPOSTCGI(cgiProg, qString):
         body = '<HTML><HEAD><link rel="short icon" href="#"></HEAD>' \
                '<BODY><H1>500 Internal Sever Error</H1></BODY></HTML>'
         pass
-    return (code, body)
+    return (code, body)'''
 
 def doHTTPService(sock):
     try:
         reqMessage = sock.recv(RECV_BUFF)
     except ConnectionResetError as e:
+        global code, responseBody
         sock.close()
         return
 
@@ -81,8 +82,8 @@ def doHTTPService(sock):
         fields = reqLine.split(' ')
         method = fields[0]
         reqURL = fields[1]
-        reqBody = fields[3]
-        #print('requested URL: {}'.format(reqURL))
+        #reqBody =
+        print('requested URL: {}'.format(reqURL))
     else :  # client closed the connection
         sock.close()
         return
@@ -93,22 +94,23 @@ def doHTTPService(sock):
             fileName = 'index.html'
         else :
             fileName = r.path[1:]
-
             fileType = fileName.split('.')[1]
-            if fileType.lower() == 'cgi':  # process CGI
+            if fileType.lower() == 'cgi':
                 code, responseBody = doCGI(fileName, r.query)
-            else:  # read the requested file
+            else:
                 code, responseBody = getFile(fileName)
 
     elif method == 'POST':
-        r = urlparse(reqURL)
+       ''' r = urlparse(reqURL)
         progName = r.path[1:]
-        code, responseBody = doPOSTCGI(progName, reqBody)
+        code, responseBody = doPOSTCGI(progName, reqBody)'''
 
     else:
         code = '501'
         responseBody = '<HTML><HEAD><link rel="short icon" href="#"></HEAD>' \
                        '<BODY><H1>501 Method Not Implemented</H1></BODY></HTML>'
+
+
 
     statusLine = f'HTTP/1.1 {code} {phrase[code]}\r\n'
     headerLine1 = 'Server: vshttpd 0.1\r\n'
@@ -123,15 +125,17 @@ def doHTTPService(sock):
 
     sock.close()
 
+
 HOST_IP = '203.250.133.88'
-PORT = 10200
+#PORT = 10400
 #HOST_IP = sys.argv[1]
-#PORT = int(sys.argv[1])
+PORT = int(sys.argv[1])
 BACKLOG = 5
 RECV_BUFF = 10000
 
 signal.signal(signal.SIGINT, shutdownServer)
 signal.signal(signal.SIGCHLD, collectZombie)
+
 try :
     connSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 except :
